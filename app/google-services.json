@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "235734048259",
+    "project_id": "htmil-cd254",
+    "storage_bucket": "htmil-cd254.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:235734048259:android:f4c5df5f43674bf6967836",
+        "android_client_info": {
+          "package_name": "com.example.fbstore"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBH4mmlUsWTS_xmXRG5X7h5zxwit8lmkSo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
