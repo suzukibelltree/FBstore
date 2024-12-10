@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,11 +19,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.example.fbstore.ui.theme.FBstoreTheme
-import com.google.android.gms.tasks.Task
 import com.google.firebase.Firebase
-import com.google.firebase.components.Lazy
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.firestore
@@ -45,142 +41,143 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
 
-    // Teamデータをfirestoreに追加する
-    fun AddTeamData(db: FirebaseFirestore, imageuri: String) {
-        var teamnum: Int = 0
-        val user = hashMapOf(
-            "id" to "2",
-            "userName" to "Bob"
-        )
+// Teamデータをfirestoreに追加する
+fun AddTeamData(db: FirebaseFirestore, imageuri: String) {
+    var teamnum: Int = 0
+    val user = hashMapOf(
+        "id" to "2",
+        "userName" to "Bob"
+    )
 
-        // usersへのデータの追加
-        db.collection("team0")
-            .document("users")
-            .update("members", FieldValue.arrayUnion(user))
-            .addOnSuccessListener {
-                Log.d("Firestore", "Team successfully written!")
-            }
-            .addOnFailureListener { e ->
-                Log.w("Firestore", "Error writing team", e)
-            }
-        val image = Image(
-            urI = "imageuri",
-            userId = "1",
-            userName = "John"
-        )
-        // imagesへのデータの追加
-        db.collection("team${teamnum}")
-            .document("images")
-            .update("images", FieldValue.arrayUnion(image))
-            .addOnSuccessListener { documentReference ->
-            }
-            .addOnFailureListener { e ->
-            }
-    }
+    // usersへのデータの追加
+    db.collection("team0")
+        .document("users")
+        .update("members", FieldValue.arrayUnion(user))
+        .addOnSuccessListener {
+            Log.d("Firestore", "Team successfully written!")
+        }
+        .addOnFailureListener { e ->
+            Log.w("Firestore", "Error writing team", e)
+        }
+    val image = Image(
+        urI = "imageuri",
+        userId = "1",
+        userName = "John"
+    )
+    // imagesへのデータの追加
+    db.collection("team${teamnum}")
+        .document("images")
+        .update("images", FieldValue.arrayUnion(image))
+        .addOnSuccessListener { documentReference ->
+        }
+        .addOnFailureListener { e ->
+        }
+}
 
-    // ミッションデータをfirestoreに追加する
-    fun AddMissionData(db: FirebaseFirestore) {
-        val reward: Int = 5
-        val missionName: String = "mountain"
-        db.collection("Missions")
-            .document("${reward}Coins")
-            .update("title", FieldValue.arrayUnion(missionName))
-            .addOnSuccessListener { documentReference ->
-            }
-            .addOnFailureListener { e ->
-            }
-    }
+// ミッションデータをfirestoreに追加する
+fun AddMissionData(db: FirebaseFirestore) {
+    val reward: Int = 5
+    val missionName: String = "mountain"
+    db.collection("Missions")
+        .document("${reward}Coins")
+        .update("title", FieldValue.arrayUnion(missionName))
+        .addOnSuccessListener { documentReference ->
+        }
+        .addOnFailureListener { e ->
+        }
+}
 
 
-    // Firestoreからデータを取得して表示するコンポーザブル関数
-    @Composable
-    fun MyScreen(db: FirebaseFirestore) {
-        val coin: Int = 10
-        val teamnum: Int = 0
-        var Imagelist by remember { mutableStateOf<List<Image>>(emptyList()) }
-        var Missionlist by remember { mutableStateOf<List<Missions>>(emptyList()) }
-        var isLoading by remember { mutableStateOf(true) } // Add loading state
+// Firestoreからデータを取得して表示するコンポーザブル関数
+@Composable
+fun MyScreen(db: FirebaseFirestore) {
+    val coin: Int = 10
+    val teamnum: Int = 0
+    var Imagelist by remember { mutableStateOf<List<Image>>(emptyList()) }
+    var Missionlist by remember { mutableStateOf<List<Missions>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) } // Add loading state
 
-        db.collection("team${teamnum}")
-            .document("images")
-            .get()
-            .addOnSuccessListener { result ->
-                //Imagelist = result.toObject(Image::class.java)?.let { listOf(it) } ?: emptyList()
-                val imagesList = result.get("images") as? List<HashMap<String, Any>>
-                Imagelist = imagesList?.map { imageMap ->
-                    Image(
-                        urI = imageMap["urI"] as String,
-                        userId = imageMap["userId"] as String,
-                        userName = imageMap["userName"] as String
-                    )
-                } ?: emptyList()
-                isLoading = false // Data loaded, set loading to false
-            }
-            .addOnFailureListener { exception ->
-                println("Error getting Image data: $exception")
-                isLoading = false // Error occurred, set loading to false
-            }
-
-        db.collection("Missions")
-            .document("${coin}Coins")
-            .get()
-            .addOnSuccessListener { result ->
-                Missionlist = listOf(
-                    Missions(
-                        MissionList = result["title"] as List<String>
-                    )
+    db.collection("team${teamnum}")
+        .document("images")
+        .get()
+        .addOnSuccessListener { result ->
+            val imagesList = result.get("images") as? List<Map<String, Any>>
+            Imagelist = imagesList?.map { imageMap ->
+                Image(
+                    urI = imageMap["urI"] as String,
+                    userId = imageMap["userId"] as String,
+                    userName = imageMap["userName"] as String
                 )
-                isLoading = false // Data loaded, set loading to false
+            } ?: emptyList()
+            isLoading = false // Data loaded, set loading to false
+        }
+        .addOnFailureListener { exception ->
+            println("Error getting Image data: $exception")
+            isLoading = false // Error occurred, set loading to false
+        }
+
+    db.collection("Missions")
+        .document("${coin}Coins")
+        .get()
+        .addOnSuccessListener { result ->
+            Missionlist = listOf(
+                Missions(
+                    MissionList = result["title"] as List<String>
+                )
+            )
+            isLoading = false // Data loaded, set loading to false
+        }
+
+
+    if (isLoading) {
+        Text("Loading data...")
+    } else if (Imagelist.isEmpty()) {
+        Text("No data")
+    } else {
+        // 取得したImageクラスインスタンスの情報を表示
+        LazyColumn(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            items(Imagelist) { item ->
+                Text(text = "Id:${item.userId}", modifier = Modifier.padding(8.dp))
+                Text(
+                    text = "Name:${item.userName}",
+                    modifier = Modifier.padding(8.dp)
+                )
             }
-
-
-        if (isLoading) {
-            Text("Loading data...")
-        } else if (Imagelist.isEmpty()) {
-            Text("No data")
-        } else {
-            // 取得したImageクラスインスタンスの情報を表示
-            LazyColumn(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                items(Imagelist) { item ->
-                    Text(text = "Id:${item.userId}", modifier = Modifier.padding(8.dp))
-                    Text(
-                        text = "Name:${item.userName}",
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
-                items(Missionlist) { item ->
-                    Text(text = "Mission:${item.MissionList}", modifier = Modifier.padding(8.dp))
-                }
+            items(Missionlist) { item ->
+                Text(text = "Mission:${item.MissionList}", modifier = Modifier.padding(8.dp))
             }
         }
     }
+}
 
-        // 画像ファイル(ローカル)をCloud Storageにアップロードした後、uriをfirestoreに保存
-        fun StoreImage(context: Context, mainActivity: MainActivity, db: FirebaseFirestore) {
-            var imageuri = ""
-            val storage = Firebase.storage
-            var storageRef = storage.reference
-            val ImageRef = storageRef.child("images/sky.jpg")
-            val filePath = File(context.filesDir, "sky.jpg")
-            Log.d("bar", filePath.path) // パスの確認
-            val stream = FileInputStream(filePath)
-            val uploadTask = ImageRef.putStream(stream)
-            uploadTask.addOnFailureListener {
-                // Handle unsuccessful uploads
-            }.addOnSuccessListener { taskSnapshot ->
-                ImageRef.downloadUrl.addOnSuccessListener { uri ->
-                    imageuri = uri.toString()//これがダウンロード用のurl
-                    mainActivity.AddTeamData(db, imageuri)
-                }.addOnFailureListener {
-                    // Handle any errors
-                    Log.d("imageerror", "imageerror")
-                }
-                // taskSnapshot.metadata contains file metadata such as size, content-type, etc.
-                // ...
-            }
+// 画像ファイル(ローカル)をCloud Storageにアップロードした後、uriをfirestoreに保存
+fun StoreImage(context: Context, db: FirebaseFirestore) {
+    var imageuri = ""
+    val storage = Firebase.storage
+    var storageRef = storage.reference
+    // これはCloud Storageのファイルパス
+    val ImageRef = storageRef.child("images/sky.jpg")
+    // ローカル(仮想端末)のファイルパス
+    val filePath = File(context.filesDir, "sky.jpg")
+    val stream = FileInputStream(filePath)
+    val uploadTask = ImageRef.putStream(stream)
+    // 画像をCloudStorageにアップロード
+    uploadTask.addOnFailureListener {
+        // Handle unsuccessful uploads
+    }.addOnSuccessListener { taskSnapshot ->
+        ImageRef.downloadUrl.addOnSuccessListener { uri ->
+            imageuri = uri.toString()//これがダウンロード用のurl
+            AddTeamData(db, imageuri)
+        }.addOnFailureListener {
+            // Handle any errors
+            Log.d("imageerror", "imageerror")
         }
+        // taskSnapshot.metadata contains file metadata such as size, content-type, etc.
     }
+}
+
 
