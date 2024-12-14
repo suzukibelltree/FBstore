@@ -1,24 +1,35 @@
 package com.example.fbstore
 
+import android.app.Activity
 import android.content.Context
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.example.fbstore.ui.theme.FBstoreTheme
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.FieldValue
@@ -27,6 +38,9 @@ import com.google.firebase.firestore.firestore
 import com.google.firebase.storage.storage
 import java.io.File
 import java.io.FileInputStream
+import java.io.InputStream
+import java.net.URI
+import java.util.UUID
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,7 +50,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             FBstoreTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    MyScreen(db)
+                    val context = this
+                    Column(
+                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+                        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+                    ) {
+                        //PickLocalImage(context, db)
+                    }
                 }
             }
         }
@@ -154,30 +174,77 @@ fun MyScreen(db: FirebaseFirestore) {
     }
 }
 
-// 画像ファイル(ローカル)をCloud Storageにアップロードした後、uriをfirestoreに保存
-fun StoreImage(context: Context, db: FirebaseFirestore) {
-    var imageuri = ""
-    val storage = Firebase.storage
-    var storageRef = storage.reference
-    // これはCloud Storageのファイルパス
-    val ImageRef = storageRef.child("images/sky.jpg")
-    // ローカル(仮想端末)のファイルパス
-    val filePath = File(context.filesDir, "sky.jpg")
-    val stream = FileInputStream(filePath)
-    val uploadTask = ImageRef.putStream(stream)
-    // 画像をCloudStorageにアップロード
-    uploadTask.addOnFailureListener {
-        // Handle unsuccessful uploads
-    }.addOnSuccessListener { taskSnapshot ->
-        ImageRef.downloadUrl.addOnSuccessListener { uri ->
-            imageuri = uri.toString()//これがダウンロード用のurl
-            AddTeamData(db, imageuri)
-        }.addOnFailureListener {
-            // Handle any errors
-            Log.d("imageerror", "imageerror")
+
+@Composable
+fun PickLocalImage(context: Context, db: FirebaseFirestore, postmodel: PostModel, teamdata: TeamData) {
+    val SelectedURI = remember { mutableStateOf<Uri>(Uri.EMPTY) }
+    val pickMedia =
+        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            if (uri != null) {
+                Log.d("PhotoPicker", "Selected URI: $uri")
+                // ここで取得したURIはローカルのファイルパス
+                SelectedURI.value = uri
+            } else {
+                Log.d("PhotoPicker", "No media selected")
+            }
         }
-        // taskSnapshot.metadata contains file metadata such as size, content-type, etc.
+    val storageRef = Firebase.storage.reference
+    // Cloud Storageへのファイルパス
+    Column(
+        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+    ) {
+        Button(onClick = {
+            pickMedia.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+        }) {
+            Text("Pick Image")
+        }
     }
+    if (SelectedURI.value != Uri.EMPTY) {
+        val imageRef = storageRef.child("images/${UUID.randomUUID()}")
+        val inputStream = context.contentResolver.openInputStream(SelectedURI.value)
+        if (inputStream != null) {
+            val uploadTask = imageRef.putStream(inputStream)
+            uploadTask.addOnSuccessListener {
+                imageRef.downloadUrl.addOnSuccessListener { downloadUri ->
+                    Log.d("PickLocalImage", "Image uploaded: $downloadUri")
+                }
+            }.addOnFailureListener { exception ->
+                Log.e("PickLocalImage", "Upload failed: ${exception.message}")
+            }
+        } else {
+            Log.e("PickLocalImage", "Failed to open InputStream")
+        }
+    }
+    // URIをfirestoreに保存
+    AddTeamData(db, SelectedURI.value.toString())
+}
+
+
+
+@Preview
+@Composable
+fun PickLocalImagePreview() {
+    Log.d("hoge3", "hoge3")
+    val instance = Firebase.firestore
+    PickLocalImage(
+        context = LocalContext.current,
+        db = instance,
+        postmodel = PostModel(
+            postId = "1",
+            user = "user1",
+            imageUrl = "",
+            mission = "missionName",
+            comments = listOf(
+                "comment1",
+                "comment2",
+                "comment3"
+            )
+        ),
+        teamdata = TeamData("team0", listOf("alice", "bob", "charlie"))
+    )
 }
 
 
